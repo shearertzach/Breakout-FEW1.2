@@ -14,7 +14,6 @@ var paddleX = (canvas.width - paddleWidth) / 2;
 var rightPressed = false;
 var leftPressed = false;
 
-
 var brickRowCount = 3;
 var brickColumnCount = 7;
 var brickWidth = 50;
@@ -22,6 +21,9 @@ var brickHeight = 20;
 var brickPadding = 10;
 var brickOffsetTop = 30;
 var brickOffsetLeft = 30;
+
+var score = 0;
+var lives = 3;
 
 var bricks = [];
 for (var c = 0; c < brickColumnCount; c++) {
@@ -48,17 +50,38 @@ function drawBall() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBall();
-    drawPaddle()
+    drawPaddle();
+    collisionDetection();
     drawBricks()
-    collisionDetection()
+    drawScore()
+    drawLives()
     x += dx;
     y += dy;
+
+    if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
+        dx = -dx;
+    }
 
     if (y + dy < ballRadius) {
         dy = -dy;
     } else if (y + dy > canvas.height - ballRadius) {
         if (x > paddleX && x < paddleX + paddleWidth) {
             dy = -dy;
+        }
+        else {
+            lives--;
+            if (!lives) {
+                alert("GAME OVER");
+                document.location.reload();
+                clearInterval(interval); // Needed for Chrome to end game
+            }
+            else {
+                x = canvas.width / 2;
+                y = canvas.height - 30;
+                dx = 2;
+                dy = -2;
+                paddleX = (canvas.width - paddleWidth) / 2;
+            }
         }
     }
 
@@ -74,6 +97,18 @@ function draw() {
             paddleX = 0;
         }
     }
+}
+
+function drawScore() {
+    ctx.font = "16px Arial";
+    ctx.fillStyle = "#0095DD";
+    ctx.fillText("Score: " + score, 8, 20);
+}
+
+function drawLives() {
+    ctx.font = "16px Arial";
+    ctx.fillStyle = "#0095DD";
+    ctx.fillText("Lives: " + lives, canvas.width - 65, 20);
 }
 
 function drawPaddle() {
@@ -121,7 +156,6 @@ function collisionDetection() {
         }
     }
 }
-
 
 function mouseMoveHandler(e) {
     var relativeX = e.clientX - canvas.offsetLeft;
