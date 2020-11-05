@@ -1,15 +1,18 @@
+/* eslint-disable import/extensions */
+import Brick from './js/Brick.js';
+import Ball from './js/Ball.js';
+import Paddle from './js/Paddle.js';
+import Scoreboard from './js/Scoreboard.js';
+// import Game from './js/Game.js'
+
 const canvas = document.getElementById('myCanvas');
 const ctx = canvas.getContext('2d');
 
-let ballX = canvas.width / 2;
-let ballY = canvas.height - 30;
-let speedX = 2;
-let speedY = -2;
 const ballRadius = 10;
 
-const paddleHeight = 10;
-const paddleWidth = 75;
-let paddleX = (canvas.width - paddleWidth) / 2;
+const ball = new Ball(canvas, 10);
+const paddle = new Paddle(canvas);
+const scoreboard = new Scoreboard(canvas);
 
 let rightPressed = false;
 let leftPressed = false;
@@ -22,43 +25,12 @@ const brickPadding = 10;
 const brickOffsetTop = 30;
 const brickOffsetLeft = 30;
 
-let score = 0;
-let lives = 3;
-
 const bricks = [];
 for (let c = 0; c < brickColumnCount; c += 1) {
   bricks[c] = [];
   for (let r = 0; r < brickRowCount; r += 1) {
-    bricks[c][r] = { x: 0, y: 0, status: 1 };
+    bricks[c][r] = new Brick(canvas, 0, 0, 1);
   }
-}
-
-function drawBall() {
-  ctx.beginPath();
-  ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
-  ctx.fillStyle = '#0095DD';
-  ctx.fill();
-  ctx.closePath();
-}
-
-function drawScore() {
-  ctx.font = '16px Arial';
-  ctx.fillStyle = '#0095DD';
-  ctx.fillText(`Score: ${score}`, 8, 20);
-}
-
-function drawLives() {
-  ctx.font = '16px Arial';
-  ctx.fillStyle = '#0095DD';
-  ctx.fillText(`Lives: ${lives}`, canvas.width - 65, 20);
-}
-
-function drawPaddle() {
-  ctx.beginPath();
-  ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
-  ctx.fillStyle = '#0095DD';
-  ctx.fill();
-  ctx.closePath();
 }
 
 function drawBricks() {
@@ -79,42 +51,34 @@ function drawBricks() {
   }
 }
 
-function resetShapes() {
-  ballX = canvas.width / 2;
-  ballY = canvas.height - 30;
-  speedX = 2;
-  speedY = -2;
-  paddleX = (canvas.width - paddleWidth) / 2;
-}
-
 function handleLives() {
-  lives -= 1;
+  scoreboard.lives -= 1;
   // If there are no lives left
-  if (!lives) {
+  if (!scoreboard.lives) {
     // eslint-disable-next-line no-alert
     alert('GAME OVER');
     document.location.reload();
     // If there are lives left
   } else {
     // Set original values
-    resetShapes();
+    ball.resetBall(canvas);
   }
 }
 
 function handleBallBounce() {
-  if (ballX + speedX > canvas.width - ballRadius || ballX + speedX < ballRadius) {
-    speedX = -speedX;
+  if (ball.x + ball.dx > canvas.width - ballRadius || ball.x + ball.dx < ballRadius) {
+    ball.dx = -ball.dx;
   }
   // If the ball hits the bottom
-  if (ballY + speedY < ballRadius) {
+  if (ball.y + ball.dy < ballRadius) {
     // Make the ball go up
-    speedY = -speedY;
+    ball.dy = -ball.dy;
     // Checks to see if the ball is below 310 Y
-  } else if (ballY + speedY > canvas.height - ballRadius * 2) {
+  } else if (ball.y + ball.dy > canvas.height - ballRadius * 2) {
     // If the ball hits the paddle
-    if (ballX > paddleX && ballX < paddleX + paddleWidth) {
+    if (ball.x > paddle.x && ball.x < paddle.x + paddle.paddleWidth) {
       // Make the ball go up
-      speedY = -speedY;
+      ball.dy = -ball.dy;
       // If the ball doesn't hit the paddel
     } else {
       handleLives();
@@ -128,11 +92,11 @@ function collisionDetection() {
       const brick = bricks[column][row];
       if (brick.status === 1) {
         // eslint-disable-next-line max-len
-        if (ballX + ballRadius > brick.x && ballX - ballRadius < brick.x + brickWidth && ballY + ballRadius > brick.y && ballY - ballRadius < brick.y + brickHeight) {
-          speedY = -speedY;
+        if (ball.x + ballRadius > brick.x && ball.x - ballRadius < brick.x + brickWidth && ball.y + ballRadius > brick.y && ball.y - ballRadius < brick.y + brickHeight) {
+          ball.dy = -ball.dy;
           brick.status = 0;
-          score += 1;
-          if (score === brickRowCount * brickColumnCount) {
+          scoreboard.score += 1;
+          if (scoreboard.score === brickRowCount * brickColumnCount) {
             // eslint-disable-next-line no-alert
             alert('YOU WIN, CONGRATULATIONS!');
             document.location.reload();
@@ -145,34 +109,34 @@ function collisionDetection() {
 
 function detectRightPressed() {
   if (rightPressed) {
-    paddleX += 7;
-    if (paddleX + paddleWidth > canvas.width) {
-      paddleX = canvas.width - paddleWidth;
+    paddle.x += 7;
+    if (paddle.x + paddle.paddleWidth > canvas.width) {
+      paddle.x = canvas.width - paddle.paddleWidth;
     }
   }
 }
 
 function detectLeftPressed() {
   if (leftPressed) {
-    paddleX -= 7;
-    if (paddleX < 0) {
-      paddleX = 0;
+    paddle.x -= 7;
+    if (paddle.x < 0) {
+      paddle.x = 0;
     }
   }
 }
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawBall();
-  drawPaddle();
+  ball.render(ctx);
+  paddle.render(ctx);
   collisionDetection();
   handleBallBounce();
   drawBricks();
-  drawScore();
-  drawLives();
+  scoreboard.drawScore(ctx);
+  scoreboard.drawLives(ctx);
 
-  ballX += speedX;
-  ballY += speedY;
+  ball.x += ball.dx;
+  ball.y += ball.dy;
 
   detectLeftPressed();
   detectRightPressed();
@@ -183,7 +147,7 @@ function draw() {
 function mouseMoveHandler(e) {
   const relativeX = e.clientX - canvas.offsetLeft;
   if (relativeX > 0 && relativeX < canvas.width) {
-    paddleX = relativeX - paddleWidth / 2;
+    paddle.x = relativeX - paddle.paddleWidth / 2;
   }
 }
 
